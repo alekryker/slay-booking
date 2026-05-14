@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLAY ROI-ET RESERVATION</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#b30000 0%,#5a0000 40%,#1a0000 70%,#000 100%);
+  font-family:'Kanit',sans-serif;
+  font-size:20px;
+  padding:14px;
+  text-align:center;
+  color:#fff;
+}
+.wrapper{ max-width:950px; margin:auto; }
+svg{ width:100%; height:auto; }
+input{ padding:8px; margin:5px; border-radius:20px; border:1px solid #ccc; }
+
+.table{ cursor:pointer; transition:.2s; }
+.table circle{ fill:white; stroke:#8b0000; stroke-width:2; }
+.table text{ font-size:14px; fill:#333; pointer-events:none; }
+
+.selected circle{ fill:#00c853; stroke:#00ff88; stroke-width:3; }
+.selected text{ fill:white; }
+
+.booked circle{
+  fill:#ff0000 !important; stroke:#ff4d4d; stroke-width:3;
+  filter:drop-shadow(0 0 8px #ff0000) drop-shadow(0 0 15px #ff0000);
+}
+.booked text{ fill:white; font-weight:bold; }
+
+.vip circle{
+  fill:#00c853; stroke:#00ff88; stroke-width:3;
+  filter:drop-shadow(0 0 6px #00ff88) drop-shadow(0 0 14px #00ff88) drop-shadow(0 0 28px rgba(0,255,136,0.6));
+}
+.vip text{ fill:white; font-weight:700; letter-spacing:0.5px; }
+
+.rules-title{ text-align:center; color:#D4AF37; font-weight:700; margin:18px 0 10px; }
+.rules-list{ list-style:none; padding-left:0; margin:0 0 14px; }
+.rules-list li{ text-align:left; color:#eaeaea; margin:6px 0; line-height:1.6; }
+
+.booking-terms{
+  max-width:900px; margin:40px auto 80px; padding:28px 32px;
+  background:linear-gradient(180deg,#2b0000,#0b0000);
+  border:1px solid rgba(212,175,55,.35); border-radius:18px;
+  color:#ddd; line-height:1.7; font-size:14px;
+}
+
+.liff-badge{
+  display:inline-block; padding:4px 10px; border-radius:10px;
+  font-size:12px; margin-bottom:6px;
+}
+.liff-badge.ok{ background:#0a4d1a; color:#9fffa3; }
+.liff-badge.warn{ background:#5a4a00; color:#ffe57a; }
+.liff-badge.err{ background:#5a0000; color:#ff9090; }
+</style>
+</head>
+<body>
+
+<div id="liffStatus" class="liff-badge warn">⏳ กำลังเชื่อมต่อ LINE…</div>
+
+<div style="margin-top:10px;">
+  <div style="font-size:25px;color:white;font-weight:bold;margin-bottom:8px;">
+    กรุณาเลือกวันที่จอง
+  </div>
+  <input type="date" id="date" onchange="loadBooked()"
+    style="padding:10px 15px;border-radius:15px;border:2px solid #8b0000;outline:none;font-size:14px;text-align:center;">
+</div>
+
+<div style="margin-top:10px;">
+  <div style="font-size:18px;color:white;font-weight:bold;margin-bottom:8px;">
+    กดที่เลขโต๊ะเพื่อจอง
+  </div>
+
+  <div class="wrapper">
+    <svg viewBox="0 0 900 1150">
+      <filter id="goldGlow"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#FFD700"/></filter>
+      <rect x="10" y="10" width="880" height="1100" rx="30" fill="#f1e7dc" stroke="url(#goldBorder)" stroke-width="6" filter="url(#goldGlow)"/>
+
+      <rect x="100" y="90" width="250" height="60" rx="25" fill="none" stroke="#8b5e3c" stroke-width="3"/>
+      <text x="225" y="130" text-anchor="middle" fill="#8b5e3c">BAR</text>
+
+      <rect x="550" y="90" width="250" height="60" rx="25" fill="none" stroke="#8b5e3c" stroke-width="3"/>
+      <text x="675" y="130" text-anchor="middle" fill="#8b5e3c">BAR</text>
+
+      <rect x="405" y="90" width="90" height="90" rx="20" fill="#bfb8a8"/>
+      <text x="450" y="140" text-anchor="middle" fill="#333" font-size="14" font-weight="bold">TOILET</text>
+
+      <rect x="110" y="420" width="100" height="300" rx="20" fill="#a40000"/>
+      <text x="160" y="570" fill="white" transform="rotate(-90 160,570)" text-anchor="middle">DJ BOOTH</text>
+
+      <path d="M 300 390 V 820 A 80 80 0 0 0 590 820 V 390"
+        stroke="#bfa58d" stroke-width="120" fill="none" stroke-linecap="round"/>
+
+      <rect x="600" y="980" width="220" height="60" rx="25" fill="none" stroke="#8b5e3c" stroke-width="3"/>
+      <text x="710" y="1015" text-anchor="middle" fill="#8b5e3c">ENTRANCE</text>
+    </svg>
+  </div>
+
+  <h3 class="rules-title">เงื่อนไขการจอง</h3>
+
+  <div class="booking-terms">
+    <h3 class="rules-title">เงื่อนไขการจองโต๊ะ</h3>
+    <ul class="rules-list">
+      <li>- 1 โต๊ะ สามารถอยู่ได้สูงสุด 4 ท่าน</li>
+      <li>- จองโต๊ะได้จนถึงเวลา 22:00 น.</li>
+      <li>- จองล่วงหน้าได้สูงสุด 1 เดือน</li>
+    </ul>
+    <h3 class="rules-title">เงื่อนไขการปล่อยโต๊ะ</h3>
+    <ul class="rules-list">
+      <li>- อาทิตย์-พฤหัสบดี มารับโต๊ะก่อน 23:30 น.</li>
+      <li>- ศุกร์-เสาร์ รับโต๊ะก่อน 22:30 น.</li>
+      <li>***หากไม่มารับโต๊ะในเวลาที่กำหนด ทางร้านจะทำการปล่อยโต๊ะทันที</li>
+    </ul>
+  </div>
+
+<script>
+// ========== CONFIG ==========
+const LIFF_ID = "2009168820-FDQ4rPc8";
+
+// ⭐ ใส่ Apps Script Web App URL ของคุณตรงนี้ (ลงท้าย /exec)
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwp0iois7TfiU0ch-69xW6SqosAp3OuRG-ypGxDnjpi3QCpfIOu3Hs-5QwtUTBcpvR4Sw/exec";
+
+
+let lineUserId = "";
+let lineDisplayName = "";
+
+function setBadge(cls, msg){
+  const el = document.getElementById("liffStatus");
+  if(!el) return;
+  el.className = "liff-badge " + cls;
+  el.textContent = msg;
+}
+
+async function initLiff(){
+  try{
+    setBadge("warn", "1/4 ตรวจ LIFF SDK…");
+    if(typeof liff === "undefined"){
+      setBadge("err", "❌ โหลด LIFF SDK ไม่สำเร็จ");
+      return;
+    }
+
+    setBadge("warn", "2/4 เรียก liff.init…");
+    await liff.init({ liffId: LIFF_ID });
+
+    if(!liff.isLoggedIn()){
+      setBadge("warn", "3/4 กำลัง redirect login…");
+      liff.login();
+      return;
+    }
+
+    setBadge("warn", "3/4 ดึง profile…");
+    const profile = await liff.getProfile();
+    lineUserId = profile.userId;
+    lineDisplayName = profile.displayName;
+
+    setBadge("ok", "✅ พร้อมจอง: " + lineDisplayName);
+  }catch(err){
+    console.error("LIFF init error:", err);
+    setBadge("err", "❌ " + (err.message || err));
+  }
+}
+
+
+// ========== Apps Script API calls ==========
+async function api(action, data){
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // simple request → no preflight
+    body: JSON.stringify({ action, data })
+  });
+  return res.json();
+}
+
+
+// ========== Tables ==========
+const tables = {
+  "VIP4":[150,220,"vip"], "VIP3":[150,310,"vip"],
+  "VIP2":[150,840,"vip"], "VIP1":[150,930,"vip"],
+  "B1":[300,400],"B2":[300,480],"B3":[300,560],"B4":[300,640],"B5":[300,720],"B6":[300,800],
+  "B7":[310,880],"B8":[360,940],"B9":[440,970],"B10":[530,950],"B11":[580,880],
+  "B12":[600,780],"B13":[600,700],"B14":[600,620],"B15":[600,540],"B16":[600,460],"B17":[600,380],
+  "T10-11":[450,380,"big"],"T12":[450,520],"T13-14":[450,650,"big"],"T15-16":[450,780,"big"],
+  "T7":[780,260],"T6":[780,360],"T5":[780,460],"T4":[780,560],"T3":[780,660],"T2":[780,760],"T1":[780,860],
+  "T8":[580,260],"T9":[350,260],"T18":[280,1050],"T19":[180,1050]
+};
+
+let selectedTable = null;
+
+function drawTables(){
+  const svg = document.querySelector("svg");
+  for(let id in tables){
+    const [x,y,cls] = tables[id];
+    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","table " + (cls || ""));
+    g.setAttribute("data-id", id);
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute("cx", x); circle.setAttribute("cy", y);
+    circle.setAttribute("r", cls === "vip" ? 40 : cls === "big" ? 35 : 32);
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    text.setAttribute("x", x); text.setAttribute("y", y+5);
+    text.setAttribute("text-anchor","middle");
+    text.textContent = id;
+
+    g.appendChild(circle); g.appendChild(text);
+    g.addEventListener("click", () => onTableClick(id, g));
+    svg.appendChild(g);
+  }
+}
+
+function onTableClick(id, g){
+  if(g.classList.contains("booked")) return;
+
+  const date = document.getElementById("date").value;
+  if(!date){
+    Swal.fire({ icon:'warning', title:'กรุณาเลือกวันที่ก่อน' });
+    return;
+  }
+  selectedTable = id;
+
+  Swal.fire({
+    title: `จองโต๊ะ ${id}`,
+    showCloseButton: true,
+    showCancelButton: true,
+    cancelButtonText: "ปิด",
+    cancelButtonColor: "#999",
+    html: `
+      <input id="swal-name" class="swal2-input" placeholder="ชื่อผู้จอง**" value="${lineDisplayName || ''}">
+      <input id="swal-slay" class="swal2-input" placeholder="จำนวนคน**" type="number">
+      <input id="swal-phone" class="swal2-input" placeholder="เบอร์โทร">
+    `,
+    confirmButtonText: "🔥 ยืนยันการจอง",
+    confirmButtonColor: "#8b0000",
+    focusConfirm: false,
+    preConfirm: () => {
+      const name  = document.getElementById('swal-name').value;
+      const slay  = document.getElementById('swal-slay').value;
+      const phone = document.getElementById('swal-phone').value;
+      if(!name || !slay || !phone){
+        Swal.showValidationMessage("กรุณากรอกข้อมูลให้ครบ");
+        return false;
+      }
+      return { name, slay, phone };
+    }
+  }).then(async (result) => {
+    if(!result.isConfirmed) return;
+    const data = result.value;
+
+    Swal.fire({ title:"กำลังจอง...", allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+
+    try{
+      const res = await api("saveReservation", {
+        name: data.name, slay: data.slay, phone: data.phone,
+        date, table: selectedTable,
+        userId: lineUserId, displayName: lineDisplayName
+      });
+
+      if(res.status === "taken"){
+        Swal.fire({ icon:"error", title:"โต๊ะถูกจองแล้ว" });
+        loadBooked();
+        return;
+      }
+
+      Swal.fire({
+        icon:"success",
+        title:"จองสำเร็จ 🎉",
+        html: `<div style="font-size:16px">
+          วันที่จอง: <b>${date}</b><br>
+          หมายเลขโต๊ะ: <b>${selectedTable}</b><br>
+          คุณ: <b>${data.name}</b><br><br>
+          <b>ระบบส่งใบยืนยันให้ใน LINE แล้ว</b>
+        </div>`
+      });
+      loadBooked();
+    }catch(err){
+      Swal.fire({ icon:"error", title:"บันทึกไม่สำเร็จ", text:String(err) });
+    }
+  });
+}
+
+async function loadBooked(){
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  document.querySelectorAll(".table").forEach(t => t.classList.remove("booked"));
+  try{
+    const res = await api("getBookedTables", { date });
+    if(Array.isArray(res.booked)){
+      res.booked.forEach(id => {
+        const el = [...document.querySelectorAll(".table")].find(t => t.getAttribute("data-id") === id);
+        if(el) el.classList.add("booked");
+      });
+    }
+  }catch(err){ console.error("loadBooked error:", err); }
+}
+
+// ========== Boot ==========
+window.addEventListener("DOMContentLoaded", function(){
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
+
+  drawTables();
+  loadBooked();
+  initLiff();
+});
+</script>
+
+</body>
+</html>
