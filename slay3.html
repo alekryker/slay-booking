@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SLAY ROI-ET</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    /* ... (CSS เหมือนเดิมของคุณ) ... */
+    body { background: #000; color: white; font-family: 'Kanit'; text-align: center; margin: 0; padding: 15px; }
+    .table { cursor: pointer; }
+    .table circle { fill: white; stroke: #8b0000; stroke-width: 2; }
+    .booked circle { fill: #ff0000 !important; stroke: #ff4d4d; filter: drop-shadow(0 0 8px #ff0000); }
+    .vip circle { fill: #00c853; stroke: #00ff88; }
+    svg { width: 100%; max-width: 800px; }
+  </style>
+</head>
+<body>
+  <h2>🔥 SLAY ROI-ET</h2>
+  <input type="date" id="date" onchange="loadBooked()" style="padding:10px; border-radius:10px; margin-bottom:20px;">
+  
+  <div id="map-container">
+    <svg viewBox="0 0 900 1150" id="svg-map">
+       </svg>
+  </div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwaw0TtgEZe-1Hwz1dyysHkz10nU09bvVCwIcDHpXO_-D1ZpsBC4hGL5muoYerQAc_Ihw/exec"; // 👈 เปลี่ยนตรงนี้!!
+    const tables = { /* ก๊อปปี้พิกัด tables ของเดิมมาวาง */ };
+
+    let liffReady = false;
+    liff.init({ liffId: "2009168820-FDQ4rPc8" }).then(() => { liffReady = true; });
+
+    // โหลดโต๊ะที่จองแล้วจาก API
+    function loadBooked() {
+      const date = document.getElementById("date").value;
+      fetch(`${WEB_APP_URL}?action=getBookedTables&date=${date}`)
+        .then(res => res.json())
+        .then(bookedList => {
+          document.querySelectorAll(".table").forEach(t => t.classList.remove("booked"));
+          bookedList.forEach(id => {
+            const el = document.querySelector(`[data-id="${id}"]`);
+            if (el) el.classList.add("booked");
+          });
+        });
+    }
+
+    // ฟังก์ชันวาดโต๊ะ
+    function drawTables() {
+      const svg = document.getElementById("svg-map");
+      for (let id in tables) {
+        const [x, y, cls] = tables[id];
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", "table " + (cls || ""));
+        g.setAttribute("data-id", id);
+        
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", x); circle.setAttribute("cy", y);
+        circle.setAttribute("r", 32);
+        
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", x); text.setAttribute("y", y+5);
+        text.setAttribute("text-anchor", "middle"); text.textContent = id;
+        
+        g.appendChild(circle); g.appendChild(text);
+        g.addEventListener("click", () => bookingFlow(id));
+        svg.appendChild(g);
+      }
+    }
+
+    function bookingFlow(id) {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el.classList.contains("booked")) return Swal.fire("โต๊ะนี้ถูกจองแล้ว", "", "error");
+
+      Swal.fire({
+        title: `จองโต๊ะ ${id}`,
+        html: `<input id="name" class="swal2-input" placeholder="ชื่อ"><input id="slay" class="swal2-input" placeholder="จำนวนคน" type="number"><input id="phone" class="swal2-input" placeholder="เบอร์โทร">`,
+        preConfirm: () => ({ name: document.getElementById('name').value, slay: document.getElementById('slay').value, phone: document.getElementById('phone').value })
+      }).then(res => {
+        if (res.isConfirmed) saveToGAS(res.value, id);
+      });
+    }
+
+    function saveToGAS(formData, tableId) {
+      const date = document.getElementById("date").value;
+      Swal.fire({ title: 'กำลังจอง...', didOpen: () => Swal.showLoading() });
+
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({ ...formData, table: tableId, date: date })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === "success") {
+          Swal.fire("จองสำเร็จ!", "", "success");
+          sendFlex(formData, tableId, date); // ส่ง Flex Message
+          loadBooked();
+        } else {
+          Swal.fire("โต๊ะถูกจองแล้ว", "", "error");
+        }
+      });
+    }
+
+    function sendFlex(data, table, date) {
+      if (!liffReady) return;
+      liff.sendMessages([{
+        "type": "flex", "altText": "ยืนยันการจอง",
+        "contents": {
+          "type": "bubble",
+          "header": { "type": "box", "layout": "vertical", "backgroundColor": "#8B0000", "contents": [{ "type": "text", "text": "ยืนยันการจองโต๊ะ", "color": "#ffffff", "weight": "bold" }] },
+          "body": { "type": "box", "layout": "vertical", "contents": [ { "type": "text", "text": table, "size": "xl", "weight": "bold" }, { "type": "text", "text": "วันที่: " + date } ] }
+        }
+      }]);
+    }
+
+    drawTables();
+    document.getElementById("date").value = new Date().toISOString().split('T')[0];
+    setTimeout(loadBooked, 1000);
+  </script>
+</body>
+</html>
